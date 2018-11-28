@@ -153,6 +153,9 @@ autoTrain <- function(args){
   
     for(j in win){
 
+      
+      message(paste0("Starting Window ", j))
+      
         #Extract window with folds
         subtrain <- train[abs(run.var) <= j ,]
         subtrain <- subtrain[complete.cases(subtrain),]
@@ -244,19 +247,33 @@ autoTrain <- function(args){
                                       ycontrol = predict(out, subtest)))
         }
 
-        message(paste0("Window ", j))
+        message(paste0("..Window ", j, " finished"))
         
       }
 
     ###########################
-    #PART 3: Treatmet Effects #
+    #PART 3: Treatment Effects #
     ###########################
     
-    win.out$te <- win.out$ytreat/win.out$ycontrol-1
-    ate <- aggregate(te ~ win,
-                     data = win.out,
-                     FUN = mean)
-    
+    #Calculate effects
+      win.out$pct.effect <- win.out$ytreat/win.out$ycontrol-1
+      win.out$lvl.effect <- win.out$ytreat - win.out$ycontrol
+      
+      ate <- aggregate(cbind(pct.effect, lvl.effect) ~ win,
+                       data = win.out,
+                       FUN = mean)
+      colnames(ate) <- c("window", "pct.effect", "lvl.effect")
+      ate$p.ks <- NA
+      ate$p.ttest <- NA
+      
+    #Calculate if statistically different
+      for(w in unique(win.out$win)){
+        temp <- win.out[win.out$win == w,]
+        ate$p.ks[ate$win == w] <- ks.test(temp$ytreat, temp$ycontrol)$p.value
+        ate$p.ttest[ate$win == w] <- t.test(temp$ytreat, temp$ycontrol)$p.value
+       
+      }
+      
     
     ###########################
     #PART 4: Save Outputs     #
