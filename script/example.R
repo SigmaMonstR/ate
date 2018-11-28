@@ -29,4 +29,9 @@
                  rdd.thresh = 50)
 
   #Auto Train
-    out <- autoTrain(args)
+    for(j in c(40, 50, 60)){
+      args$rdd.thresh <- j
+      out <- autoTrain(args)
+      message(paste0("RDD THRESHOLD : ", args$run.var," >=", args$rdd.thresh))
+      save(out, file = paste0("thresh_",j,".Rda"), compress = TRUE)
+    }

@@ -147,7 +147,7 @@ autoTrain <- function(args){
     test <- data[treatment == T,]
     
   #Predict Treatment
-    win.out <- data.frame()
+    win.out <- list()
     diagnostics <- data.frame()
     mods <- list()
   
@@ -198,14 +198,13 @@ autoTrain <- function(args){
                                             rmse = rmse))
             
           #Predict Control/Treatment
-            out <- ranger(form.obj, subtrain, 
+             out <- ranger(form.obj, subtrain, 
                           num.trees = 500)
-            mods[[paste0("ranger_",j)]] <- out
+             mods[[paste0("ranger_",j)]] <- out
             
-            win.out <- rbind(win.out,
-                             data.frame(win = j,
+            win.out[[j]] <- data.frame(win = j,
                                         ytreat = subtest[[yvar.name]],
-                                        ycontrol = predict(out, subtest)$predictions))
+                                        ycontrol = predict(out, subtest)$predictions)
         } else {
           
           #LM Option
@@ -239,12 +238,11 @@ autoTrain <- function(args){
           
           #Predict
           out <- lm(form.obj, data = subtrain)
-          mods[[paste0("lm",j)]] <- out
+          #mods[[paste0("lm",j)]] <- out
           
-          win.out <- rbind(win.out,
-                           data.frame(win = j,
+          win.out[[j]] <- data.frame(win = j,
                                       ytreat = subtest[[yvar.name]],
-                                      ycontrol = predict(out, subtest)))
+                                      ycontrol = predict(out, subtest))
         }
 
         message(paste0("..Window ", j, " finished"))
@@ -256,6 +254,7 @@ autoTrain <- function(args){
     ###########################
     
     #Calculate effects
+      win.out <- do.call(win.out, rbind)
       win.out$pct.effect <- win.out$ytreat/win.out$ycontrol-1
       win.out$lvl.effect <- win.out$ytreat - win.out$ycontrol
       
